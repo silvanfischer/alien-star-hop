@@ -97,6 +97,15 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
   .steer-note.only-touch[hidden] { display: none !important; }
   p.only-touch { display: block !important; }
 }
+html.touch .touch { display: block; }
+html.touch .hint { display: none; }
+html.touch .only-keys { display: none !important; }
+html.touch .only-touch { display: grid !important; }
+html.touch .steer.only-touch { display: flex !important; }
+html.touch .steer-note.only-touch[hidden] { display: none !important; }
+html.touch p.only-touch { display: block !important; }
+#steerBtn { position: fixed; z-index: 7; right: calc(64px + env(safe-area-inset-right, 0px)); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .35); background: var(--panel); color: var(--fg); font-family: var(--display); font-size: 12px; }
+#steerBtn.on { background: var(--gold); color: #3a2a00; border-color: transparent; }
 .pad-label { justify-self: start; align-self: start; font-family: var(--display); font-size: 11px; background: rgba(255, 255, 255, .1); border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
 @media (max-height: 480px) {
   .card { padding: 16px; }
@@ -165,6 +174,7 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
   <div id="joy"><div id="knob"></div></div>
   <button class="tbtn" id="fireBtn" type="button">FIRE</button>
   <button class="tbtn" id="jumpBtn" type="button">JUMP</button>
+  <button id="steerBtn" type="button" aria-pressed="false" aria-label="Tilt steering">TILT OFF</button>
   <button id="pauseBtn" type="button" aria-label="Pause">II</button>
 </div>
 
@@ -347,7 +357,8 @@ const PAINT = {
 // ---------- Renderer / scene ----------
 const canvas = $('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-const IS_TOUCH = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+const IS_TOUCH = !!((window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || navigator.maxTouchPoints > 0 || 'ontouchstart' in window);
+document.documentElement.classList.toggle('touch', IS_TOUCH);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.75 : 2));
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 4000);
@@ -1107,6 +1118,10 @@ function steerNote(text) {
 }
 function updateTiltBtn() {
   document.querySelectorAll('.steer-opt').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.steer === steerMode)));
+  const b = $('steerBtn');
+  b.textContent = steerMode === 'tilt' ? 'TILT ON' : 'TILT OFF';
+  b.setAttribute('aria-pressed', String(steerMode === 'tilt'));
+  b.classList.toggle('on', steerMode === 'tilt');
 }
 function setSteer(mode) {
   steerMode = mode;
@@ -1135,13 +1150,17 @@ async function enableTilt() {
     if (tilt.on && !tilt.got) { disableTilt(); tiltFailed('Tilt not available', 'This browser does not share the accelerometer, so steering is back on the joystick.'); }
   }, 1500);
 }
-if (typeof DeviceMotionEvent === 'undefined') { steerMode = 'joystick'; document.querySelectorAll('.steer').forEach(el => el.remove()); }
+if (typeof DeviceMotionEvent === 'undefined') steerMode = 'joystick';
 updateTiltBtn();
-document.querySelectorAll('.steer-opt').forEach(b => b.addEventListener('click', () => {
+function chooseSteer(mode) {
   steerNote('');
-  setSteer(b.dataset.steer);
-  if (steerMode === 'tilt') enableTilt(); else disableTilt();
-}));
+  if (mode === 'tilt' && typeof DeviceMotionEvent === 'undefined') { tiltFailed('Tilt not available', 'This browser does not share the accelerometer, so steering stays on the joystick.'); return; }
+  setSteer(mode);
+  if (steerMode === 'tilt') { enableTilt(); if (game.state === 'play' || game.state === 'flight') banner('Tilt steering on', 'Tilt the phone left or right to steer.', 2000); }
+  else disableTilt();
+}
+document.querySelectorAll('.steer-opt').forEach(b => b.addEventListener('click', () => chooseSteer(b.dataset.steer)));
+$('steerBtn').addEventListener('click', () => chooseSteer(steerMode === 'tilt' ? 'joystick' : 'tilt'));
 window.addEventListener('orientationchange', () => { tilt.neutral = null; });
 
 function togglePause() {
