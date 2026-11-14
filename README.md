@@ -8,7 +8,9 @@ A 3D browser game. Jim, a three-eyed green alien, is stranded on Pluto. Collect 
 
 ## Play
 
-Open `alien-star-hop.html` in a browser. It is a single file and loads Three.js r128 from cdnjs.
+Play it online: https://silvanfischer.github.io/alien-star-hop/
+
+Or open `index.html` in a browser. It is a single file and loads Three.js r128 from cdnjs.
 
 ## Controls
 
