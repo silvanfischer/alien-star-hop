@@ -113,6 +113,8 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 .tbtn { position: fixed; z-index: 7; width: 78px; height: 78px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .45); text-shadow: 0 1px 3px rgba(0, 0, 0, .7); box-shadow: 0 3px 10px rgba(0, 0, 0, .45); color: var(--fg); font-family: var(--display); font-size: 13px; touch-action: none; }
 #jumpBtn { right: calc(24px + env(safe-area-inset-right, 0px)); bottom: calc(30px + env(safe-area-inset-bottom, 0px)); background: rgba(190, 140, 10, .75); }
 #fireBtn { right: calc(112px + env(safe-area-inset-right, 0px)); bottom: calc(60px + env(safe-area-inset-bottom, 0px)); background: rgba(40, 150, 40, .8); }
+#tiltBtn { position: fixed; z-index: 7; right: calc(64px + env(safe-area-inset-right, 0px)); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); font-family: var(--display); font-size: 12px; }
+#tiltBtn.on { background: rgba(40, 150, 40, .85); border-color: rgba(255, 255, 255, .5); }
 #pauseBtn { position: fixed; z-index: 7; right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); font-size: 18px; }
 @media (max-width: 520px) {
   .planet-name { font-size: 17px; }
@@ -159,6 +161,7 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
   <div id="joy"><div id="knob"></div></div>
   <button class="tbtn" id="fireBtn" type="button">FIRE</button>
   <button class="tbtn" id="jumpBtn" type="button">JUMP</button>
+  <button id="tiltBtn" type="button" aria-pressed="false" aria-label="Steer by tilting the phone">TILT</button>
   <button id="pauseBtn" type="button" aria-label="Pause">II</button>
 </div>
 
@@ -171,6 +174,7 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
       <span class="pad-label">Joystick</span><span>Walk and turn, or steer the star fighter</span>
       <span class="pad-label">Fire</span><span>Shoot (hold to keep firing, aims by itself)</span>
       <span class="pad-label">Jump</span><span>Jump (land on a monster to stun it)</span>
+      <span class="pad-label">Tilt</span><span>Tap TILT, then tilt the phone to steer left and right</span>
       <span class="pad-label">II</span><span>Pause</span>
     </div>
     <div class="keys only-keys">
@@ -1058,7 +1062,57 @@ const joy = { x: 0, y: 0, id: null };
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => fb.addEventListener(ev, () => { fireHeld = false; }));
   ['joy', 'fireBtn', 'jumpBtn', 'pauseBtn'].forEach(id => $(id).addEventListener('contextmenu', e => e.preventDefault()));
   $('pauseBtn').addEventListener('click', () => togglePause());
+
 })();
+
+const tilt = { on: false, x: 0, neutral: null, sign: 1, got: false };
+function screenAngle() {
+  return (screen.orientation && typeof screen.orientation.angle === 'number') ? screen.orientation.angle : (window.orientation || 0);
+}
+function readMotion(e) {
+  const g = e.accelerationIncludingGravity;
+  if (!g || g.x == null || g.y == null) return;
+  const a = screenAngle();
+  const right = a === 90 ? -g.y : (a === -90 || a === 270) ? g.y : a === 180 ? -g.x : g.x;
+  const up = a === 90 ? g.x : (a === -90 || a === 270) ? -g.x : a === 180 ? -g.y : g.y;
+  tilt.got = true;
+  if (tilt.neutral === null) {
+    tilt.sign = (up + (g.z || 0)) < 0 ? -1 : 1;
+    tilt.neutral = -right * tilt.sign / 9.81;
+  }
+  let d = -right * tilt.sign / 9.81 - tilt.neutral;
+  d = Math.abs(d) < 0.06 ? 0 : d - Math.sign(d) * 0.06;
+  tilt.x += (clamp(d / 0.34, -1, 1) - tilt.x) * 0.35;
+}
+function updateTiltBtn() {
+  const b = $('tiltBtn');
+  b.textContent = tilt.on ? 'TILT ON' : 'TILT';
+  b.setAttribute('aria-pressed', String(tilt.on));
+  b.classList.toggle('on', tilt.on);
+}
+function disableTilt() {
+  tilt.on = false; tilt.x = 0;
+  window.removeEventListener('devicemotion', readMotion);
+  updateTiltBtn();
+}
+async function enableTilt() {
+  try {
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+      const r = await DeviceMotionEvent.requestPermission();
+      if (r !== 'granted') { banner('Tilt not allowed', 'Allow motion access for this site to steer by tilting.', 2800); return; }
+    }
+  } catch (err) { banner('Tilt not allowed', 'Allow motion access for this site to steer by tilting.', 2800); return; }
+  tilt.on = true; tilt.neutral = null; tilt.got = false; tilt.x = 0;
+  window.addEventListener('devicemotion', readMotion);
+  updateTiltBtn();
+  banner('Tilt steering on', 'Tilt the phone left or right to steer.', 2200);
+  setTimeout(() => {
+    if (tilt.on && !tilt.got) { disableTilt(); banner('Tilt not available', 'This browser does not share the accelerometer here.', 3000); }
+  }, 1500);
+}
+if (typeof DeviceMotionEvent === 'undefined') $('tiltBtn').hidden = true;
+$('tiltBtn').addEventListener('click', () => { if (tilt.on) disableTilt(); else enableTilt(); });
+window.addEventListener('orientationchange', () => { tilt.neutral = null; });
 
 function togglePause() {
   if (game.state === 'play' || game.state === 'flight') { game.prevState = game.state; game.state = 'paused'; showScreen('pauseScreen'); $('resumeBtn').focus(); }
@@ -1183,6 +1237,7 @@ function updatePlayer(dt) {
   if (keys.KeyA || keys.ArrowLeft) turn += 1;
   if (keys.KeyD || keys.ArrowRight) turn -= 1;
   if (joy.id !== null) { move += -joy.y; turn += -joy.x; }
+  if (tilt.on) turn -= tilt.x;
   move = clamp(move, -1, 1); turn = clamp(turn, -1, 1);
 
   if (turn) { player.fwd.applyAxisAngle(player.up, turn * 2.7 * dt); orthonormalize(player); }
@@ -1327,6 +1382,7 @@ function updateLaunch(dt) {
 }
 
 function startFlight(to) {
+  tilt.neutral = null;
   clearLevel();
   game.state = 'flight';
   flight.to = to; flight.t = 0; flight.x = flight.y = flight.vx = flight.vy = 0;
@@ -1412,6 +1468,7 @@ function updateFlight(dt, t) {
   if (keys.KeyW || keys.ArrowUp) iy += 1;
   if (keys.KeyS || keys.ArrowDown) iy -= 1;
   if (joy.id !== null) { ix += joy.x; iy += -joy.y; }
+  if (tilt.on) ix += tilt.x;
   ix = clamp(ix, -1, 1); iy = clamp(iy, -1, 1);
   flight.vx += (ix * 26 - flight.vx) * Math.min(1, dt * 6);
   flight.vy += (iy * 18 - flight.vy) * Math.min(1, dt * 6);
@@ -1593,6 +1650,7 @@ function frame(now) {
 
 // ---------- Screens ----------
 function beginPlay(level) {
+  tilt.neutral = null;
   initAudio();
   if (document.activeElement) document.activeElement.blur();
   showScreen(null);
