@@ -4,7 +4,7 @@ A 3D browser game. Jim, a three-eyed green alien, is stranded on Pluto. Collect 
 
 - Every planet has its own monsters: ice yetis, space jellies, crystal bugs, ring blobs, storm clouds and rock crabs.
 - Earth is home to friendly dinosaurs and a few grumpy T-rexes that roar when they spot Jim.
-- Plays with keyboard or touch (joystick, FIRE and JUMP buttons on phones). On phones, tap TILT to steer left and right with the accelerometer.
+- Plays with keyboard or touch (joystick, FIRE and JUMP buttons on phones). On phones, choose Joystick or Tilt phone steering on the title or pause screen; tilt uses the accelerometer.
 
 ## Play
 

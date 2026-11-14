@@ -93,6 +93,8 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
   .hint { display: none; }
   .only-keys { display: none !important; }
   .only-touch { display: grid !important; }
+  .steer.only-touch { display: flex !important; }
+  .steer-note.only-touch[hidden] { display: none !important; }
   p.only-touch { display: block !important; }
 }
 .pad-label { justify-self: start; align-self: start; font-family: var(--display); font-size: 11px; background: rgba(255, 255, 255, .1); border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
@@ -113,8 +115,10 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 .tbtn { position: fixed; z-index: 7; width: 78px; height: 78px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .45); text-shadow: 0 1px 3px rgba(0, 0, 0, .7); box-shadow: 0 3px 10px rgba(0, 0, 0, .45); color: var(--fg); font-family: var(--display); font-size: 13px; touch-action: none; }
 #jumpBtn { right: calc(24px + env(safe-area-inset-right, 0px)); bottom: calc(30px + env(safe-area-inset-bottom, 0px)); background: rgba(190, 140, 10, .75); }
 #fireBtn { right: calc(112px + env(safe-area-inset-right, 0px)); bottom: calc(60px + env(safe-area-inset-bottom, 0px)); background: rgba(40, 150, 40, .8); }
-#tiltBtn { position: fixed; z-index: 7; right: calc(64px + env(safe-area-inset-right, 0px)); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); font-family: var(--display); font-size: 12px; }
-#tiltBtn.on { background: rgba(40, 150, 40, .85); border-color: rgba(255, 255, 255, .5); }
+.steer { align-items: center; justify-content: center; gap: 6px 8px; margin: 16px auto 0; flex-wrap: wrap; }
+.steer-label { flex-basis: 100%; text-align: center; font-size: 13px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.steer-opt { font-family: var(--display); font-size: 13px; padding: 9px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, .08); color: var(--fg); cursor: pointer; }
+.steer-opt[aria-pressed="true"] { background: var(--gold); color: #3a2a00; border-color: transparent; box-shadow: 0 0 0 2px rgba(255, 210, 63, .35); }
 #pauseBtn { position: fixed; z-index: 7; right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); font-size: 18px; }
 @media (max-width: 520px) {
   .planet-name { font-size: 17px; }
@@ -161,7 +165,6 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
   <div id="joy"><div id="knob"></div></div>
   <button class="tbtn" id="fireBtn" type="button">FIRE</button>
   <button class="tbtn" id="jumpBtn" type="button">JUMP</button>
-  <button id="tiltBtn" type="button" aria-pressed="false" aria-label="Steer by tilting the phone">TILT</button>
   <button id="pauseBtn" type="button" aria-label="Pause">II</button>
 </div>
 
@@ -174,7 +177,7 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
       <span class="pad-label">Joystick</span><span>Walk and turn, or steer the star fighter</span>
       <span class="pad-label">Fire</span><span>Shoot (hold to keep firing, aims by itself)</span>
       <span class="pad-label">Jump</span><span>Jump (land on a monster to stun it)</span>
-      <span class="pad-label">Tilt</span><span>Tap TILT, then tilt the phone to steer left and right</span>
+      <span class="pad-label">Tilt</span><span>Pick "Tilt phone" below to steer left and right by tilting</span>
       <span class="pad-label">II</span><span>Pause</span>
     </div>
     <div class="keys only-keys">
@@ -185,6 +188,12 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
       <span><kbd>P</kbd></span><span>Pause · <kbd>M</kbd> mute</span>
     </div>
     <p class="sub only-keys">In the star fighter, steer with WASD or the arrow keys and blast asteroids with Space.</p>
+    <div class="steer only-touch" role="group" aria-label="Steering">
+      <span class="steer-label">Steering</span>
+      <button type="button" class="steer-opt" data-steer="joystick" aria-pressed="true">Joystick</button>
+      <button type="button" class="steer-opt" data-steer="tilt" aria-pressed="false">Tilt phone</button>
+    </div>
+    <p class="sub steer-note only-touch" hidden></p>
     <div class="btns">
       <button class="big" id="startBtn" type="button">Start on Pluto</button>
       <button class="big alt" id="continueBtn" type="button" hidden>Continue</button>
@@ -204,6 +213,12 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 <section class="screen" id="pauseScreen" hidden>
   <div class="card">
     <h1>Paused</h1>
+    <div class="steer only-touch" role="group" aria-label="Steering">
+      <span class="steer-label">Steering</span>
+      <button type="button" class="steer-opt" data-steer="joystick" aria-pressed="true">Joystick</button>
+      <button type="button" class="steer-opt" data-steer="tilt" aria-pressed="false">Tilt phone</button>
+    </div>
+    <p class="sub steer-note only-touch" hidden></p>
     <div class="btns"><button class="big" id="resumeBtn" type="button">Resume</button><button class="big alt" id="quitBtn" type="button">Title screen</button></div>
   </div>
 </section>
@@ -1084,34 +1099,49 @@ function readMotion(e) {
   d = Math.abs(d) < 0.06 ? 0 : d - Math.sign(d) * 0.06;
   tilt.x += (clamp(d / 0.34, -1, 1) - tilt.x) * 0.35;
 }
+const STEER_KEY = 'alien-star-hop-steer';
+let steerMode = 'joystick';
+try { if (localStorage.getItem(STEER_KEY) === 'tilt') steerMode = 'tilt'; } catch (e) {}
+function steerNote(text) {
+  document.querySelectorAll('.steer-note').forEach(n => { n.textContent = text; n.hidden = !text; });
+}
 function updateTiltBtn() {
-  const b = $('tiltBtn');
-  b.textContent = tilt.on ? 'TILT ON' : 'TILT';
-  b.setAttribute('aria-pressed', String(tilt.on));
-  b.classList.toggle('on', tilt.on);
+  document.querySelectorAll('.steer-opt').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.steer === steerMode)));
+}
+function setSteer(mode) {
+  steerMode = mode;
+  try { localStorage.setItem(STEER_KEY, mode); } catch (e) {}
+  updateTiltBtn();
+}
+function tiltFailed(title, text) {
+  setSteer('joystick'); steerNote(text); banner(title, text, 3000);
 }
 function disableTilt() {
   tilt.on = false; tilt.x = 0;
   window.removeEventListener('devicemotion', readMotion);
-  updateTiltBtn();
 }
 async function enableTilt() {
   try {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
       const r = await DeviceMotionEvent.requestPermission();
-      if (r !== 'granted') { banner('Tilt not allowed', 'Allow motion access for this site to steer by tilting.', 2800); return; }
+      if (r !== 'granted') { tiltFailed('Tilt not allowed', 'Motion access was not allowed, so steering is back on the joystick.'); return; }
     }
-  } catch (err) { banner('Tilt not allowed', 'Allow motion access for this site to steer by tilting.', 2800); return; }
+  } catch (err) { tiltFailed('Tilt not allowed', 'Motion access was not allowed, so steering is back on the joystick.'); return; }
+  if (tilt.on) return;
   tilt.on = true; tilt.neutral = null; tilt.got = false; tilt.x = 0;
   window.addEventListener('devicemotion', readMotion);
-  updateTiltBtn();
-  banner('Tilt steering on', 'Tilt the phone left or right to steer.', 2200);
+  steerNote('');
   setTimeout(() => {
-    if (tilt.on && !tilt.got) { disableTilt(); banner('Tilt not available', 'This browser does not share the accelerometer here.', 3000); }
+    if (tilt.on && !tilt.got) { disableTilt(); tiltFailed('Tilt not available', 'This browser does not share the accelerometer, so steering is back on the joystick.'); }
   }, 1500);
 }
-if (typeof DeviceMotionEvent === 'undefined') $('tiltBtn').hidden = true;
-$('tiltBtn').addEventListener('click', () => { if (tilt.on) disableTilt(); else enableTilt(); });
+if (typeof DeviceMotionEvent === 'undefined') { steerMode = 'joystick'; document.querySelectorAll('.steer').forEach(el => el.remove()); }
+updateTiltBtn();
+document.querySelectorAll('.steer-opt').forEach(b => b.addEventListener('click', () => {
+  steerNote('');
+  setSteer(b.dataset.steer);
+  if (steerMode === 'tilt') enableTilt(); else disableTilt();
+}));
 window.addEventListener('orientationchange', () => { tilt.neutral = null; });
 
 function togglePause() {
@@ -1236,7 +1266,7 @@ function updatePlayer(dt) {
   if (keys.KeyS || keys.ArrowDown) move -= 1;
   if (keys.KeyA || keys.ArrowLeft) turn += 1;
   if (keys.KeyD || keys.ArrowRight) turn -= 1;
-  if (joy.id !== null) { move += -joy.y; turn += -joy.x; }
+  if (joy.id !== null) { move += -joy.y; if (!tilt.on) turn += -joy.x; }
   if (tilt.on) turn -= tilt.x;
   move = clamp(move, -1, 1); turn = clamp(turn, -1, 1);
 
@@ -1467,7 +1497,7 @@ function updateFlight(dt, t) {
   if (keys.KeyD || keys.ArrowRight) ix += 1;
   if (keys.KeyW || keys.ArrowUp) iy += 1;
   if (keys.KeyS || keys.ArrowDown) iy -= 1;
-  if (joy.id !== null) { ix += joy.x; iy += -joy.y; }
+  if (joy.id !== null) { iy += -joy.y; if (!tilt.on) ix += joy.x; }
   if (tilt.on) ix += tilt.x;
   ix = clamp(ix, -1, 1); iy = clamp(iy, -1, 1);
   flight.vx += (ix * 26 - flight.vx) * Math.min(1, dt * 6);
@@ -1651,6 +1681,7 @@ function frame(now) {
 // ---------- Screens ----------
 function beginPlay(level) {
   tilt.neutral = null;
+  if (steerMode === 'tilt' && !tilt.on && IS_TOUCH) enableTilt();
   initAudio();
   if (document.activeElement) document.activeElement.blur();
   showScreen(null);
